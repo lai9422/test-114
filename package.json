@@ -1,0 +1,26 @@
+{
+  "name": "aeust114-1",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "routing.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aeust114-1/Aeust114-1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Aeust114-1/Aeust114-1/issues"
+  },
+  "homepage": "https://github.com/Aeust114-1/Aeust114-1#readme",
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "mysql2": "^3.15.3"
+  }
+}
