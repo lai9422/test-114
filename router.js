@@ -1,53 +1,54 @@
 // 檔案：router.js
-import * as controller from './modules/userController.js';
+import * as controller from './modules/userController.js'; // 把所有功能引入並取名為 controller
 
 function router(req, res) {
-    const url = req.url;
-    const method = req.method;
 
-    // --- 處理動態路由 (API) ---
-    
-    // 1. 處理刪除 (DELETE /api/employees/{id})
-    // 使用 Regex 檢查網址是否符合 /api/employees/數字
-    if (url.match(/\/api\/employees\/\d+/) && method === 'DELETE') {
-        const id = url.split('/').pop(); // 取得網址最後面的 ID
-        controller.deleteEmployee(req, res, id);
-        return; // 處理完直接結束，不進入下方的 switch
-    }
 
-    // 2. 處理修改 (PUT /api/employees/{id})
-    if (url.match(/\/api\/employees\/\d+/) && method === 'PUT') {
-        const id = url.split('/').pop();
-        controller.updateEmployee(req, res, id);
-        return;
-    }
 
-    // --- 處理靜態路由 ---
-    switch (url) {
+
+    switch (req.url) {
         case '/':
+            // 首頁直接導向登入
             res.writeHead(302, { 'Location': '/login' });
             res.end();
             break;
 
-        case '/login':
-            if (method === 'GET') controller.showLogin(res);
-            else if (method === 'POST') controller.handleLogin(req, res);
+        case '/login'://登入頁
+            if (req.method === 'GET') {//顯示登入頁
+                controller.showLogin(res);
+            } else if (req.method === 'POST') {//處理登入邏輯
+                controller.handleLogin(req, res);
+            }
             break;
         
         case '/register':
-            if (method === 'GET') controller.showRegister(res);
-            else if (method === 'POST') controller.handleRegister(req, res);
+            if (req.method === 'GET') {
+                // 如果是用戶想看註冊表單
+                controller.showRegister(res);
+            } else if (req.method === 'POST') {
+                // 如果是用戶送出註冊資料
+                controller.handleRegister(req, res);
+            }
             break;
 
-        case '/api/employees':
-            if (method === 'POST') controller.addEmployee(req, res);
+
+        case '/api/employees': // 對應前端 fetch 的路徑
+            if (req.method === 'POST') {
+                // 呼叫 controller 裡面的函式來處理新增邏輯
+                controller.addEmployee(req, res);
+            }
             break;
 
-        case '/dashboard':
-            if (method === 'GET') controller.showDashboard(res);
+        // ...
+
+        case '/dashboard'://人員管理系統
+            if (req.method === 'GET') {
+                controller.showDashboard(res);
+            }
             break;
         
-        default:
+
+        default://傳出錯誤頁面
             controller.Error404(res);
             break;
     }
