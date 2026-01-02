@@ -16,6 +16,46 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+    // [新增] 用來記錄當前編輯的員工 ID (null 代表新增模式)
+    let currentEditId = null;
+
+    // [新增] 開啟新增視窗 (重置表單)
+    function openAddModal() {
+        currentEditId = null;
+        document.getElementById('addEmployeeForm').reset();
+        document.getElementById('modalTitle').innerText = "新增員工資料";
+        const modal = new bootstrap.Modal(document.getElementById('addEmployeeModal'));
+        modal.show();
+    }
+
+    // [新增] 開啟編輯視窗 (填入資料)
+    function openEditModal(id, name, email, pos, dept, status) {
+        currentEditId = id;
+        document.getElementById('empName').value = name;
+        document.getElementById('empEmail').value = email;
+        document.getElementById('empPosition').value = pos;
+        document.getElementById('empDept').value = dept;
+        document.getElementById('empStatus').value = status;
+        
+        document.getElementById('modalTitle').innerText = "編輯員工資料";
+        const modal = new bootstrap.Modal(document.getElementById('addEmployeeModal'));
+        modal.show();
+    }
+
+    // [新增] 刪除員工
+    async function deleteEmployee(id) {
+        if (!confirm('確定要刪除嗎？')) return;
+        try {
+            const response = await fetch('/api/employees/' + id, { method: 'DELETE' });
+            if (response.ok) {
+                alert('刪除成功');
+                location.reload();
+            } else {
+                alert('刪除失敗');
+            }
+        } catch(e) { console.error(e); alert('錯誤'); }
+    }
+
     async function submitNewEmployee() {
         // 1. 取得表單資料
         const name = document.getElementById('empName').value;
@@ -23,7 +63,6 @@
         const position = document.getElementById('empPosition').value;
         const department = document.getElementById('empDept').value;
         const status = document.getElementById('empStatus').value;
-
         // 簡單驗證
         if(!name || !email || !position) {
             alert("請填寫所有必填欄位");
@@ -31,20 +70,27 @@
         }
 
         const newEmployeeData = { name, email, position, department, status };
-
         try {
             // 2. 發送 API 給後端 (假設後端路由是 /api/employees)
-            const response = await fetch('/api/employees', {
-                method: 'POST',
+            
+            // [修改] 根據是否有 currentEditId 決定是 POST (新增) 還是 PUT (修改)
+            let url = '/api/employees';
+            let method = 'POST';
+
+            if (currentEditId) {
+                url = '/api/employees/' + currentEditId;
+                method = 'PUT';
+            }
+
+            const response = await fetch(url, {
+                method: method, // [修改] 使用動態變數
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(newEmployeeData)
             });
-
             if (response.ok) {
                 const result = await response.json();
-                
                 // 3. 成功後：關閉 Modal 並清空表單
                 const modalEl = document.getElementById('addEmployeeModal');
                 const modal = bootstrap.Modal.getInstance(modalEl);
@@ -52,11 +98,12 @@
                 document.getElementById('addEmployeeForm').reset();
 
                 // 4. 動態新增一列到表格 (這樣不用重新整理頁面)
-                addCreateRowToTable(newEmployeeData); 
-                
-                alert('新增成功！');
+                // [修改] 為了簡單起見，修改後直接重新整理頁面
+                // addCreateRowToTable(newEmployeeData); 
+                alert(currentEditId ? '更新成功' : '新增成功！');
+                location.reload();
             } else {
-                alert('新增失敗，請稍後再試');
+                alert('操作失敗，請稍後再試');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -64,25 +111,21 @@
         }
     }
 
-    // 輔助函式：將新資料插入表格第一列
+    // 輔助函式：將新資料插入表格第一列 (此函式若reload頁面則暫時用不到，保留原樣)
     function addCreateRowToTable(data) {
         const tbody = document.querySelector('tbody');
-        
         // 如果目前表格顯示 "目前沒有員工資料"，先移除該行
         if (tbody.children[0] && tbody.children[0].innerText.includes('目前沒有員工資料')) {
             tbody.innerHTML = '';
         }
 
         const newRow = document.createElement('tr');
-        
         // 判斷狀態標籤顏色
         const statusBadge = data.status === 'Active' 
             ? '<span class="badge bg-success status-badge">在職</span>' 
             : '<span class="badge bg-secondary status-badge">離職</span>';
-
         // 產生頭像首字
         const avatarChar = data.name.charAt(0);
-
         newRow.innerHTML = `
             <td>
                 <div class="d-flex align-items-center">
@@ -103,7 +146,6 @@
                 <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </td>
         `;
-
         // 將新的一行插入到表格最上方
         tbody.insertBefore(newRow, tbody.firstChild);
     }
@@ -136,7 +178,7 @@
                 <h2>人員列表</h2>
                 <div class="d-flex align-items-center">
                     <span class="me-2">歡迎回來, <strong><%= adminName %></strong></span>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                    <button class="btn btn-primary btn-sm" onclick="openAddModal()">
                         <i class="bi bi-plus-lg"></i> 新增員工
                     </button>
                 </div>
@@ -179,8 +221,15 @@
                                             <% } %>
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil"></i></button>
-                                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                            <button class="btn btn-sm btn-outline-primary me-1"
+                                                onclick="openEditModal('<%= emp.id %>', '<%= emp.name %>', '<%= emp.email %>', '<%= emp.position %>', '<%= emp.department %>', '<%= emp.status %>')">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                onclick="deleteEmployee('<%= emp.id %>')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </td>
                                     </tr>
                                 <% }); %>
@@ -200,7 +249,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">新增員工資料</h5>
+                <h5 class="modal-title" id="modalTitle">新增員工資料</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">

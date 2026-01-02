@@ -1,15 +1,24 @@
-// 檔案：db.js
-// --- 模擬資料庫 (暫存在記憶體中) ---
+import mysql from 'mysql2';
 
-// 定義一個陣列來存放使用者資料
-// 預設先建立一組測試帳號
-const users = [
-    { 
-        id: 1, 
-        email: 'test@gmail.com', 
-        password: '123' 
+
+// 配置連線資訊
+const config = {
+    host: '34.81.11.12',
+    user: 'AEUST_student',
+    password: '112111122',
+    database: 'aeust'
+}
+// 建立連線
+const connection = mysql.createConnection(config);
+
+
+// 執行連線
+connection.connect(function(err) {
+    if (err) {
+        console.error('資料庫連線失敗：', err);
+    } else {
+        console.log('成功連線到MySQL資料庫');
     }
-];
+});
 
-// 匯出這個物件，讓其他檔案可以讀取或修改
-export default { users };
+export default connection;

@@ -3,7 +3,20 @@ import * as controller from './modules/userController.js'; // 把所有功能引
 
 function router(req, res) {
 
-
+    // [新增] 處理動態 API 路由 (DELETE 和 PUT)
+    // 檢查網址是否符合 /api/employees/數字
+    const apiMatch = req.url.match(/\/api\/employees\/(\d+)/);
+    
+    if (apiMatch) {
+        const id = apiMatch[1]; // 取得 ID
+        if (req.method === 'DELETE') {
+            controller.deleteEmployee(req, res, id);
+            return; // 結束函式，不進入 switch
+        } else if (req.method === 'PUT') {
+            controller.updateEmployee(req, res, id);
+            return; // 結束函式，不進入 switch
+        }
+    }
 
 
     switch (req.url) {

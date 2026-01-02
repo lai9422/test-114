@@ -1,38 +1,43 @@
-// 檔案：modules/register.js
 import dynamicR from './dynamicResources.js'; 
 import querystring from 'querystring';
-import db from '../db.js'; // 引入模擬資料庫
+import db from '../db.js';
 
+// 2. 定義函式
 export function handleRegister(req, res) {
     let body = '';
     req.on('data', chunk => { body += chunk.toString(); });
     
     req.on('end', function() {
         const formData = querystring.parse(body);
-        const { email, password } = formData;
+        const { email, password } = formData; // 這裡我們只拿 email, password (如您的需求)
 
-        // --- 修改部分開始 ---
+        // 【邏輯一】檢查 Email
+        const checkSql = 'SELECT * FROM users WHERE email = ?';
         
-        // 1. 檢查 Email 是否已存在
-        const existingUser = db.users.find(u => u.email === email);
+        db.query(checkSql, [email], (err, results) => {
+            if (err) {
+                console.error(err);
+                return dynamicR(res, 'register', { error: "資料庫錯誤" });
+            }
 
-        if (existingUser) {
-            return dynamicR(res, 'register', { error: "這個 Email 已經被註冊過了！" });
-        }
+            if (results.length > 0) {
+                return dynamicR(res, 'register', { error: "這個 Email 已經被註冊過了！" });
+            }
 
-        // 2. 新增資料 (模擬 Insert)
-        const newId = db.users.length + 1; // 簡單產生一個 ID
-        const newUser = { id: newId, email, password };
-        
-        db.users.push(newUser); // 將新使用者推入陣列
+            // 【邏輯二】新增資料
+            const insertSql = 'INSERT INTO users (email, password) VALUES (?, ?)';
+            
+            db.query(insertSql, [email, password], (err2, results2) => {
+                if (err2) {
+                    console.error(err2);
+                    return dynamicR(res, 'register', { error: "註冊失敗，請稍後再試" });
+                }
 
-        console.log(`新用戶 ${email} 註冊成功，ID: ${newId} (模擬模式)`);
-        console.log('目前所有使用者:', db.users); // 印出來讓你看一下目前的資料
-
-        // 註冊成功後導向登入頁
-        res.writeHead(302, { 'Location': '/login' });
-        res.end();
-
-        // --- 修改部分結束 ---
+                console.log(`新用戶 ${email} 註冊成功，ID: ${results2.insertId}`);
+                
+                res.writeHead(302, { 'Location': '/login' });
+                res.end();
+            });
+        });
     });
 }

@@ -1,31 +1,37 @@
-// 檔案：modules/loginLogic.js
-import db from '../db.js'; // 引入剛剛改好的模擬資料庫
+import db from '../db.js';
 import querystring from 'querystring';
 import dynamicR from './dynamicResources.js';
 
 export function handleLogin(req, res) {
-    let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
-    
+    let body = '';//因為資料是分批進來的，我們需要一個容器先把收到的碎片暫時存起來。
+    req.on('data', chunk => { body += chunk.toString(); });//這個 chunk 預設是 Buffer (二進位數據)
+    // chunk.toString()：把剛剛拿到的那一小塊二進位數據，強制翻譯成人類看得懂的文字 (String)，"email=test%40gmail.com&password=1234"
+    //req：使用者的請求，它本身是一個「唯讀串流 (Readable Stream)」。
+    //.on(...)：這是 Node.js 的「事件監聽器」。意思是：「當......發生的時候，請執行後面的動作」。
     req.on('end', function() {
-        const formData = querystring.parse(body);
-        const { email, password } = formData;
+        const formData = querystring.parse(body);//parse 後變成好用的物件：
+        const { email, password } = formData;//同時拿出 email 和 password
+        const sqlInstruction = 'SELECT * FROM users WHERE email = ? AND password = ?';// 使用 ? 是為了防止 SQL Injection (駭客攻擊)，這是安全寫法
 
-        // --- 修改部分開始 ---
-        // 原本是用 db.query(SQL...)，現在改成直接在陣列中尋找
-        // 邏輯：在 db.users 裡面找一個 user，他的 email 和 password 都符合輸入的值
-        const user = db.users.find(u => u.email === email && u.password === password);
+        db.query(sqlInstruction, [email, password], function(err, results) {//callback
+            if (err) {
+                // 如果資料庫報錯 (例如語法錯誤或連線斷掉)
+                console.error(err);
+                dynamicR(res, 'login', { error: "系統錯誤，請稍後再試" });
+                return;
+            }
 
-        if (user) {
-            // 有找到 user (user 變數不是 undefined)，代表登入成功
-            console.log(`使用者 ${user.email} 登入成功 (模擬模式)`);
-            res.writeHead(302, { 'Location': '/dashboard' });
-            res.end();
-        } else {
-            // 沒找到，代表失敗
-            console.log(`登入失敗：${email}`);
-            dynamicR(res, 'login', { error: "帳號或密碼錯誤" });
-        }
-        // --- 修改部分結束 ---
+            // results 是一個陣列，如果長度大於 0，代表有找到這個人
+            if (results.length > 0) {//這行就是在問：「箱子裡有東西嗎？」
+                // 如果有東西 (> 0) ，代表SQL有找到人，則判定登入成功。
+                console.log(`使用者 ${results[0].email} 登入成功`);
+                res.writeHead(302, { 'Location': '/dashboard' });
+                res.end();
+            } else {
+                // 如果是空的 (else)，代表 SQL 沒找到人，判定登入失敗。
+                //登入失敗 (找不到符合的帳號密碼)
+                dynamicR(res, 'login', { error: "帳號或密碼錯誤" });
+            }
+        });
     });
 }
