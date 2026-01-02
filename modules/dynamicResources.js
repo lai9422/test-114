@@ -4,12 +4,12 @@ import ejs from 'ejs';
 /**
  * dynamicR (Dynamic Response)
  * 這是我們自定義的通用函式，用來處理所有需要 "EJS 渲染" 的回應。
- * * @param {object} res - HTTP 回應物件 (Response)，讓我們可以把結果傳回給瀏覽器。
- * @param {string} filename - 模板的檔案名稱 (例如 'login' 或 'dashboard')。
- * @param {object} data - 要填入模板的數據。
- * - 寫法 data = {} 是 ES6 的「預設參數」。
- * - 如果呼叫時沒傳數據 (例如只傳了 res 和 filename)，data 就會自動變成空物件 {}。
- * - 這樣是為了防止 EJS 渲染時因為 data 是 undefined 而報錯。
+ * res - HTTP 回應物件 (Response)，讓我們可以把結果傳回給瀏覽器。
+ * filename - 模板的檔案名稱 (例如 'login' 或 'dashboard')。
+ * data - 要填入模板的數據。
+ * 寫法 data = {} 是 ES6 的「預設參數」。
+ * 如果呼叫時沒傳數據 (例如只傳了 res 和 filename)，data 就會自動變成空物件 {}。
+ * 這樣是為了防止 EJS 渲染時因為 data 是 undefined 而報錯。
  */
 function dynamicR(res, filename, data = {}) {
 

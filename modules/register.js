@@ -8,7 +8,7 @@ import dynamicR from './dynamicResources.js';
  */
 export function handleRegister(req, res) {
     
-    // --- 階段 A: 接收數據流 (Data Streaming) ---
+    //接收數據流
     // 在 Node.js 中，HTTP POST 的資料不是「瞬間」全部到達的，而是像水流一樣分批到達。
     // 所以我們需要一個水桶 (body 變數) 來接水。
     let body = '';
