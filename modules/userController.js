@@ -24,7 +24,8 @@ export { handleLogin };
 
 export function showDashboard(res) {
     // 不再使用 mockEmployees，改用 SQL 查詢
-    const sql = 'SELECT * FROM employees';
+    const sql = 'SELECT * FROM employees ORDER BY id DESC';
+    //新增的出現在最上面
     
     db.query(sql, (err, results) => {
         if (err) {
@@ -96,5 +97,60 @@ export function addEmployee(req, res) {
     });
 }
 
-// 6. 處理註冊邏輯 (POST)
+
+// [新增] 8. 處理更新員工邏輯 (PUT)
+export function updateEmployee(req, res) {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', () => {
+        try {
+            const data = JSON.parse(body);
+            const { id, name, email, position, department, status } = data;
+            const sql = 'UPDATE employees SET name=?, email=?, position=?, department=?, status=? WHERE id=?';
+            
+            db.query(sql, [name, email, position, department, status, id], (err, result) => {
+                if (err) {
+                    console.error(err);
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    return res.end(JSON.stringify({ success: false, message: '資料庫錯誤' }));
+                }
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, message: '更新成功' }));
+            });
+        } catch (error) {
+            console.error(error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false }));
+        }
+    });
+}
+
+// [新增] 9. 處理刪除員工邏輯 (DELETE)
+export function deleteEmployee(req, res) {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', () => {
+        try {
+            const data = JSON.parse(body);
+            const { id } = data;
+            const sql = 'DELETE FROM employees WHERE id=?';
+            
+            db.query(sql, [id], (err, result) => {
+                if (err) {
+                    console.error(err);
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    return res.end(JSON.stringify({ success: false, message: '資料庫錯誤' }));
+                }
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, message: '刪除成功' }));
+            });
+        } catch (error) {
+            console.error(error);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false }));
+        }
+    });
+}
+
+// 10. 處理註冊邏輯 (POST)
 export { handleRegister };

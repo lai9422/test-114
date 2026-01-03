@@ -31,11 +31,17 @@ function router(req, res) {
             }
             break;
 
-
+// [新增] 員工管理 API 路由
         case '/api/employees': // 對應前端 fetch 的路徑
             if (req.method === 'POST') {
                 // 呼叫 controller 裡面的函式來處理新增邏輯
                 controller.addEmployee(req, res);
+            } else if (req.method === 'PUT') {
+                // [新增] 修改
+                controller.updateEmployee(req, res);
+            } else if (req.method === 'DELETE') {
+                // [新增] 刪除
+                controller.deleteEmployee(req, res);
             }
             break;
 
