@@ -17,63 +17,42 @@
 
 <script>
     /**
-     * 主函式：處理新增員工的表單送出
-     * 通常綁定在 "儲存" 按鈕的 onclick 事件或表單的 onsubmit 事件
+     * [修改] 主函式：處理表單送出 (包含新增與修改)
      */
-    async function submitNewEmployee() {
-        // --- 1. 取得表單資料 (DOM 操作) ---
-        // 透過 id 抓取 HTML 元素中的輸入值
-        const id = document.getElementById('empId').value; // 取得隱藏的 ID
+    async function submitForm() {
+        // [新增] 取得隱藏的 ID 欄位
+        const id = document.getElementById('empId').value;
+        
         const name = document.getElementById('empName').value;
-        //const email = document.getElementById('empEmail').value;
+        const email = document.getElementById('empEmail').value;
         const position = document.getElementById('empPosition').value;
         const department = document.getElementById('empDept').value;
         const status = document.getElementById('empStatus').value;
 
-        // --- 前端簡單驗證 ---
-        // 檢查必要欄位是否有值，若無則彈出警告並中斷函式
-        if(!name || !position) {
+        if(!name || !email || !position) {
             alert("請填寫所有必填欄位");
-            return; // 停止執行後續程式碼
+            return;
         }
-        // 將資料包裝成 newEmployeeData 物件
-        const newEmployeeData = { id,name, position, department, status };
 
-        // 判斷是新增 (POST) 還是修改 (PUT)
+        // 包裝資料，如果有 ID 就放進去
+        const employeeData = { id, name, email, position, department, status };
+        
+        // [新增] 判斷方法：有 ID 就是 PUT (修改)，沒有就是 POST (新增)
         const method = id ? 'PUT' : 'POST';
 
         try {
-            // 2. 發送 API 給後端 (假設後端路由是 /api/employees)
-            // 使用 await 等待 fetch 完成，避免程式繼續往下跑
-            // 假設後端接收 POST 請求的路由是 '/api/employees'
             const response = await fetch('/api/employees', {
-                method: method, // 指定 HTTP 方法為 POST (新增)
-                headers: {
-                    'Content-Type': 'application/json' // 告訴後端我們傳的是 JSON 格式
-                },
-                body: JSON.stringify(newEmployeeData) // 將 JS 物件轉成 JSON 字串
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(employeeData)
             });
-            // 若回應是ok，檢查 HTTP 狀態碼是否為 200-299 (成功)
-            if (response.ok) {
-                alert(id ? '修改成功！' : '新增成功！');
-                window.location.reload(); // [建議可選] 直接重新整理頁面以更新資料
-                //const result = await response.json(); // 等待後端回傳的結果 (通常會包含新建立的 ID 或完整資料)
-                
-                // --- 3. 成功後的 UI 處理 ---
-                
-                // 取得 Bootstrap Modal 的 DOM 元素 (取得在新增員工的視窗寫入的資料)
-                // modalE1是一個html元素，透過bootstrap.Modal.getInstance(modalEl)取得該元素的Modal以及控制
-                const modalEl = document.getElementById('addEmployeeModal');
-                const modal = bootstrap.Modal.getInstance(modalEl);
-                modal.hide(); //這裡因為我們已經對bootstrap的控制，所以可以直接呼叫hide方法來關閉modal視窗
-                document.getElementById('addEmployeeForm').reset(); // 重置表單
 
-                // 4. 動態新增一列到表格 (這樣不用重新整理頁面)
-                addCreateRowToTable(newEmployeeData); 
-                
-                alert('新增成功！');
+            if (response.ok) {
+                // [修改] 為了簡化邏輯，成功後直接重新整理頁面顯示最新資料
+                alert(id ? '修改成功！' : '新增成功！');
+                window.location.reload(); 
             } else {
-                alert('新增失敗，請稍後再試');
+                alert('操作失敗，請稍後再試');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -81,9 +60,9 @@
         }
     }
 
-    // 2. [新增] 開始編輯函式
+    // [新增] 啟動編輯模式
     function startEdit(id, name, email, position, department, status) {
-        // 填入資料到 Modal
+        // 1. 將資料填入 Modal 欄位
         document.getElementById('empId').value = id;
         document.getElementById('empName').value = name;
         document.getElementById('empEmail').value = email;
@@ -91,16 +70,16 @@
         document.getElementById('empDept').value = department;
         document.getElementById('empStatus').value = status;
         
-        // 修改 Modal標題 (選用)
+        // 2. 修改 Modal 標題
         document.querySelector('.modal-title').innerText = '修改員工資料';
 
-        // 開啟 Modal
+        // 3. 開啟 Modal
         const modalEl = document.getElementById('addEmployeeModal');
         const modal = new bootstrap.Modal(modalEl);
         modal.show();
     }
 
-    // 3. [新增] 刪除員工函式
+    // [新增] 刪除員工函式
     async function deleteEmployee(id) {
         if (!confirm('確定要刪除這位員工嗎？')) return;
 
@@ -113,7 +92,7 @@
 
             if (response.ok) {
                 alert('刪除成功');
-                window.location.reload(); // 重新整理頁面
+                window.location.reload(); // 刪除後重新整理
             } else {
                 alert('刪除失敗');
             }
@@ -123,87 +102,28 @@
         }
     }
 
-    // 4. [新增] 重置表單 (當 Modal 關閉時或點擊新增時使用)
+    // [新增] 重置表單 (點擊新增按鈕時呼叫)
     function resetForm() {
         document.getElementById('addEmployeeForm').reset();
         document.getElementById('empId').value = ''; // 清空 ID
         document.querySelector('.modal-title').innerText = '新增員工資料';
     }
-
-
-
-
-
-
-    // 輔助函式：將新資料插入表格第一列
-    function addCreateRowToTable(data) {
-        const tbody = document.querySelector('tbody'); // 選取表格的 tbody 元素
-        
-        // --- 處理空資料狀態 ---
-        // 如果目前表格顯示 "目前沒有員工資料"，先移除該行
-        if (tbody.children[0] && tbody.children[0].innerText.includes('目前沒有員工資料')) {
-            tbody.innerHTML = '';
-        }
-
-        const newRow = document.createElement('tr'); // 建立一個新的 tr (表格列) 元素
-        
-        // --- 邏輯判斷：在職狀態標籤顏色 ---
-        // 使用三元運算子判斷：如果在職狀態是 'Active' 給綠色(success)，否則給灰色(secondary)
-        const statusBadge = data.status === 'Active' 
-            ? '<span class="badge bg-success status-badge">在職</span>' 
-            : '<span class="badge bg-secondary status-badge">離職</span>';
-
-        // --- 邏輯判斷：頭像文字 ---
-        // 抓取名字的第一個字元當作頭像 (例如 "John" -> "J")
-        const avatarChar = data.name.charAt(0);
-
-        newRow.innerHTML = `  
-           <td>
-                <div class="d-flex align-items-center">
-                    <div class="avatar d-flex justify-content-center align-items-center me-3 text-dark">
-                        ${avatarChar}
-                    </div>
-                    <div>
-                        <div class="fw-bold">${data.name}</div>
-                        <div class="text-muted small">${data.email}</div>
-                    </div>
-                </div>
-            </td>
-            <td>${data.position}</td>
-            <td>${data.department}</td>
-            <td>${statusBadge}</td>
-            <td>
-                <button class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-            </td>
-        `; //「請把等號右邊這串文字，當作 HTML 程式碼，直接塞進 newRow 這個 <tr> 裡面，並且要讓瀏覽器把標籤（如 <td>, <div>）渲染出來，而不只是顯示純文字。」
-            
-
-        // 將新的一行插入到表格最上方
-        tbody.insertBefore(newRow, tbody.firstChild);
-    }
 </script>
-<body>
 
+<body>
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-2 sidebar p-3">
-            <h4 class="text-center mb-4 mt-2">EMS 系統</h4>
-            <hr>
-            <ul class="nav flex-column">
-                <li class="nav-item mb-2">
-                    <a href="#" class="nav-link active"><i class="bi bi-people-fill me-2"></i> 人員管理</a>
-                </li>
-                <li class="nav-item mb-2">
-                    <a href="#" class="nav-link"><i class="bi bi-bar-chart-fill me-2"></i> 績效報表</a>
-                </li>
-                <li class="nav-item mb-2">
-                    <a href="#" class="nav-link"><i class="bi bi-gear-fill me-2"></i> 系統設定</a>
-                </li>
-            </ul>
-            <div class="mt-auto pt-5">
-                <a href="/login" class="btn btn-outline-light w-100 btn-sm">登出</a>
-            </div>
+             <h4 class="text-center mb-4 mt-2">EMS 系統</h4>
+             <hr>
+             <ul class="nav flex-column">
+                 <li class="nav-item mb-2"><a href="#" class="nav-link active"><i class="bi bi-people-fill me-2"></i> 人員管理</a></li>
+                 <li class="nav-item mb-2"><a href="#" class="nav-link"><i class="bi bi-bar-chart-fill me-2"></i> 績效報表</a></li>
+                 <li class="nav-item mb-2"><a href="#" class="nav-link"><i class="bi bi-gear-fill me-2"></i> 系統設定</a></li>
+             </ul>
+             <div class="mt-auto pt-5">
+                 <a href="/login" class="btn btn-outline-light w-100 btn-sm">登出</a>
+             </div>
         </div>
 
         <div class="col-md-10 p-4 bg-light">
@@ -211,7 +131,7 @@
                 <h2>人員列表</h2>
                 <div class="d-flex align-items-center">
                     <span class="me-2">歡迎回來, <strong><%= adminName %></strong></span>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEmployeeModal" onclick="resetForm()">
                         <i class="bi bi-plus-lg"></i> 新增員工
                     </button>
                 </div>
@@ -254,8 +174,14 @@
                                             <% } %>
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil"></i></button>
-                                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                            <button class="btn btn-sm btn-outline-primary me-1" 
+                                                onclick="startEdit('<%= emp.id %>', '<%= emp.name %>', '<%= emp.email %>', '<%= emp.position %>', '<%= emp.department %>', '<%= emp.status %>')">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteEmployee('<%= emp.id %>')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </td>
                                     </tr>
                                 <% }); %>
@@ -271,6 +197,7 @@
         </div>
     </div>
 </div>
+
 <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -280,6 +207,8 @@
             </div>
             <div class="modal-body">
                 <form id="addEmployeeForm">
+                    <input type="hidden" id="empId">
+
                     <div class="mb-3">
                         <label for="empName" class="form-label">姓名</label>
                         <input type="text" class="form-control" id="empName" required>
@@ -314,7 +243,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" onclick="submitNewEmployee()">儲存</button>
+                <button type="button" class="btn btn-primary" onclick="submitForm()">儲存</button>
             </div>
         </div>
     </div>
